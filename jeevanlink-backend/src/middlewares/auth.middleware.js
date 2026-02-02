@@ -1,44 +1,47 @@
 import { User } from "../models/user.model.js";
-import bcrypt from "bcrypt"
-import Jwt from "jsonwebtoken"
-// import { BlacklistToken } from "../models/blacklistToken.model.js";
-// import { Captain } from "../models/captain.model.js";
+import Jwt from "jsonwebtoken";
+import redis from "../config/redis.js";
 
 export const authUser = async (req, res, next) => {
-    // sbse phle token ko lo 
-    //1. here are 2 ways 1 is from cookie and other is from header
-    const userToken  = await req.cookies?.userToken  || req.headers.authorization?.split(' ')[1];
+  // token from cookie OR header
+  const userToken =
+    req.cookies?.userToken || req.headers.authorization?.split(" ")[1];
 
-    if (!userToken ) {
-        return res.status(401).json({ message: "Unauthorized" })
+  if (!userToken) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    //  REDIS CHECK FIRST
+    const cachedUser = await redis.get(`auth:user:${userToken}`);
+
+    if (cachedUser) {
+      req.user = JSON.parse(cachedUser);
+      return next();
     }
 
-    // const isBlackListed = await BlacklistToken.findOne({ token: userToken  });
+    const decoded = Jwt.verify(userToken, process.env.JWT_SECRET);
 
-    // if (isBlackListed) {
-    //     return res.status(401).json({ message: "Unauthorized" })
-    // }
-
-    // agr token valid h to user le lo qki token me id aati h 
-    try {
-        const decoded = Jwt.verify(userToken , process.env.JWT_SECRET);
-        console.log("Decoded:", decoded);
-        const user = await User.findById(decoded._id)
-
-        // // now set the user in req 
-        // req.user = user;
-
-        // // terminatte 
-        // return next();
-
-        // after: const user = await User.findById(decoded._id)
-
-        req.user = user;
-        return next();
-
-
-    } catch (error) {
-        return res.status(401).json({ message: "Unauthorized" })
+    const user = await User.findById(decoded._id);
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-}
+    // 🔴 SAVE USER IN REDIS
+    await redis.setEx(
+      `auth:user:${userToken}`,
+      60 * 60 * 24, // 24 hours
+      JSON.stringify({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      })
+    );
+
+    req.user = user;
+    return next();
+  } catch (error) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+};

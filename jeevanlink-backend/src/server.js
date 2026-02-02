@@ -2,6 +2,8 @@ import app from "./app.js";
 import connectDB from "./db/db.js";
 import dotenv from "dotenv"
 import * as http from "http"
+import "./jobs/emergencyTimeOut.jobs.js";
+
 
 dotenv.config({
     path: "./.env"

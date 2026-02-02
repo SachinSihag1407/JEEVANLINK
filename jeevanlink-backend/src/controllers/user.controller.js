@@ -1,6 +1,7 @@
 import { ExpressValidator, validationResult } from "express-validator";
 import { User } from "../models/user.model.js";
 import { createUser } from "../services/user.service.js";
+import redis  from "../config/redis.js";
 
 const registerUser = async (req, res, next) => {
     const errors = validationResult(req);
@@ -62,9 +63,22 @@ const loginUser = async (req, res) => {
     }
     const userToken = user.generateAuthToken();
 
+
+    await redis.setEx(
+        `auth:user:${userToken}`,
+        60 * 60 * 24, // 24 hours
+        JSON.stringify({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        })
+    );
+
     res.cookie("userToken", userToken);
 
-    res.status(200).json({ userToken, user })
+    res.status(200).json({ userToken, user });
+
 
 }
 

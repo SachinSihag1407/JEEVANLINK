@@ -1,10 +1,17 @@
 import { Router } from "express";
 import { body } from "express-validator";
 import {
+    acceptEmergency,
+    assignAmbulance,
+    cancelEmergency,
     createEmergency,
+    getAssignedEmergenciesForAmbulance,
     getEmergencyById,
+    getPendingEmergencies,
+    updateAmbulanceStatus,
     updateEmergencyStatus,
-} from "../controllers/emergency.controller.js";
+}  from "../controllers/emergency.controller.js";
+
 import { authUser } from "../middlewares/auth.middleware.js";
 
 const emergencyRouter = Router();
@@ -23,7 +30,7 @@ emergencyRouter.post(
 
 // GET EMERGENCY DETAILS
 emergencyRouter.get(
-    "/get/emergencyId",
+    "/get/:emergencyId",
     authUser,
     getEmergencyById
 );
@@ -40,4 +47,40 @@ emergencyRouter.patch(
     updateEmergencyStatus
 );
 
+emergencyRouter.patch(
+    "/cancel/:emergencyId",
+    authUser,
+    cancelEmergency
+);
+
+emergencyRouter.patch(
+  "/accept/:emergencyId",
+  authUser,
+  acceptEmergency
+);
+
+
+emergencyRouter.get(
+  "/pending",
+  authUser,
+  getPendingEmergencies
+);
+
+emergencyRouter.get(
+  "/assigned",
+  authUser,
+  getAssignedEmergenciesForAmbulance
+);
+
+emergencyRouter.patch(
+  "/assign-ambulance/:emergencyId",
+  authUser,
+  assignAmbulance
+);
+
+emergencyRouter.patch(
+  "/ambulance-status/:emergencyId",
+  authUser,
+  updateAmbulanceStatus
+);
 export default emergencyRouter;

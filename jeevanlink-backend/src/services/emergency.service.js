@@ -11,8 +11,28 @@ export const createEmergencyService = async ({
   bloodGroup,
   bloodUnits,
 }) => {
-  // 🔴 REDIS CHECK FIRST (active emergency)
-  const cachedEmergencyId = await redis.get(`active_emergency:${patientId}`);
+  // ---------------- SAFETY CLEANUP (stale emergencies) ----------------
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+  await Emergency.updateMany(
+    {
+      patient: patientId,
+      status: "CREATED",
+      createdAt: { $lt: tenMinutesAgo },
+    },
+    {
+      status: "CLOSED",
+      closedAt: new Date(),
+    }
+  );
+
+  // clear any stale redis lock
+  await redis.del(`active_emergency:${patientId}`);
+
+  // ---------------- REDIS CHECK ----------------
+  const cachedEmergencyId = await redis.get(
+    `active_emergency:${patientId}`
+  );
 
   if (cachedEmergencyId) {
     return {
@@ -22,7 +42,7 @@ export const createEmergencyService = async ({
     };
   }
 
-  // 🔴 DB FALLBACK (safety)
+  // ---------------- DB FALLBACK ----------------
   const activeEmergency = await Emergency.findOne({
     patient: patientId,
     status: { $in: ["CREATED", "ASSIGNED", "IN_TREATMENT"] },
@@ -31,7 +51,9 @@ export const createEmergencyService = async ({
   if (activeEmergency) {
     await redis.set(
       `active_emergency:${patientId}`,
-      activeEmergency._id.toString()
+      activeEmergency._id.toString(),
+      "EX",
+      600 // 10 minutes TTL
     );
 
     return {
@@ -41,6 +63,7 @@ export const createEmergencyService = async ({
     };
   }
 
+  // ---------------- CREATE EMERGENCY ----------------
   const emergency = await Emergency.create({
     patient: patientId,
     symptoms,
@@ -50,10 +73,12 @@ export const createEmergencyService = async ({
     bloodUnits,
   });
 
-  //  SET REDIS LOCK
+  // ---------------- SET REDIS LOCK WITH TTL ----------------
   await redis.set(
     `active_emergency:${patientId}`,
-    emergency._id.toString()
+    emergency._id.toString(),
+    "EX",
+    600 // 10 minutes
   );
 
   return {
@@ -61,6 +86,7 @@ export const createEmergencyService = async ({
     emergency,
   };
 };
+
 
 /*------------------ Get Emergency By ID Service-----------------------*/
 

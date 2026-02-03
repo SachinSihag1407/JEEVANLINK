@@ -12,6 +12,7 @@ import {
     updateEmergencyStatusService,
 } from "../services/emergency.service.js";
 import { Emergency } from "../models/emergency.model.js";
+import { createBloodRequestService } from "../services/bloodRequest.service.js";
 
 
 
@@ -145,49 +146,60 @@ export const cancelEmergency = async (req, res) => {
 /*-------------------------------- accept emergency------------------------------*/
 
 export const acceptEmergency = async (req, res) => {
-    const { emergencyId } = req.params;
+  const { emergencyId } = req.params;
 
-    // role check
-    if (req.user.role !== "HOSPITAL") {
-        return res
-            .status(403)
-            .json({ message: "Only hospitals can accept emergencies" });
+  // role check
+  if (req.user.role !== "HOSPITAL") {
+    return res
+      .status(403)
+      .json({ message: "Only hospitals can accept emergencies" });
+  }
+
+  const emergency = await Emergency.findById(emergencyId);
+
+  if (!emergency) {
+    return res.status(404).json({ message: "Emergency not found" });
+  }
+
+  if (emergency.status === "CLOSED") {
+    return res.status(400).json({ message: "Emergency already closed" });
+  }
+
+  // ✅ IDENTITY CASE (same hospital again)
+  if (
+    emergency.hospital &&
+    emergency.hospital.toString() === req.user._id.toString()
+  ) {
+    // ENSURE BLOOD REQUEST EXISTS
+    if (emergency.bloodGroup && emergency.bloodUnits) {
+      await createBloodRequestService(emergency._id);
     }
 
-    const emergency = await Emergency.findById(emergencyId);
-
-    if (!emergency) {
-        return res.status(404).json({ message: "Emergency not found" });
-    }
-
-    if (emergency.status === "CLOSED") {
-        return res.status(400).json({ message: "Emergency already closed" });
-    }
-
-    // idempotent case (same hospital again)
-    if (
-        emergency.hospital &&
-        emergency.hospital.toString() === req.user._id.toString()
-    ) {
-        return res.status(200).json({
-            message: "Emergency already accepted by this hospital",
-            emergency,
-        });
-    }
-
-    const result = await acceptEmergencyService({
-        emergencyId,
-        hospitalId: req.user._id,
+    return res.status(200).json({
+      message: "Emergency already accepted by this hospital",
+      emergency,
     });
+  }
 
-    if (result.error) {
-        return res.status(400).json({ message: result.message });
-    }
+  // NORMAL ACCEPT FLOW
+  const result = await acceptEmergencyService({
+    emergencyId,
+    hospitalId: req.user._id,
+  });
 
-    res.status(200).json({
-        message: "Emergency accepted successfully",
-        emergency: result.emergency,
-    });
+  if (result.error) {
+    return res.status(400).json({ message: result.message });
+  }
+
+  // AUTO CREATE BLOOD REQUEST (TEMP DESIGN)
+  if (result.emergency.bloodGroup && result.emergency.bloodUnits) {
+    await createBloodRequestService(result.emergency._id);
+  }
+
+  return res.status(200).json({
+    message: "Emergency accepted successfully",
+    emergency: result.emergency,
+  });
 };
 
 
@@ -214,84 +226,84 @@ export const getPendingEmergencies = async (req, res) => {
 /*-------------------- Get Assigned Emergencies (Ambulance) --------------------*/
 
 export const getAssignedEmergenciesForAmbulance = async (req, res) => {
-  if (req.user.role !== "AMBULANCE") {
-    return res
-      .status(403)
-      .json({ message: "Only ambulances can access this" });
-  }
+    if (req.user.role !== "AMBULANCE") {
+        return res
+            .status(403)
+            .json({ message: "Only ambulances can access this" });
+    }
 
-  const emergencies = await getAssignedEmergenciesForAmbulanceService();
+    const emergencies = await getAssignedEmergenciesForAmbulanceService();
 
-  res.status(200).json({
-    count: emergencies.length,
-    emergencies,
-  });
+    res.status(200).json({
+        count: emergencies.length,
+        emergencies,
+    });
 };
 
 
 /*-------------------- Assign Ambulance --------------------*/
 
 export const assignAmbulance = async (req, res) => {
-  const { emergencyId } = req.params;
+    const { emergencyId } = req.params;
 
-  if (req.user.role !== "AMBULANCE") {
-    return res
-      .status(403)
-      .json({ message: "Only ambulances can accept trips" });
-  }
+    if (req.user.role !== "AMBULANCE") {
+        return res
+            .status(403)
+            .json({ message: "Only ambulances can accept trips" });
+    }
 
-  const result = await assignAmbulanceService({
-    emergencyId,
-    ambulanceId: req.user._id,
-  });
+    const result = await assignAmbulanceService({
+        emergencyId,
+        ambulanceId: req.user._id,
+    });
 
-  if (result.error) {
-    return res.status(400).json({ message: result.message });
-  }
+    if (result.error) {
+        return res.status(400).json({ message: result.message });
+    }
 
-  res.status(200).json({
-    message: "Ambulance assigned successfully",
-    emergency: result.emergency,
-  });
+    res.status(200).json({
+        message: "Ambulance assigned successfully",
+        emergency: result.emergency,
+    });
 };
 
 
 /*-------------------- Update Ambulance Status --------------------*/
 
 export const updateAmbulanceStatus = async (req, res) => {
-  const { emergencyId } = req.params;
-  const { status } = req.body;
+    const { emergencyId } = req.params;
+    const { status } = req.body;
 
-  if (req.user.role !== "AMBULANCE") {
-    return res
-      .status(403)
-      .json({ message: "Only ambulances can update status" });
-  }
+    if (req.user.role !== "AMBULANCE") {
+        return res
+            .status(403)
+            .json({ message: "Only ambulances can update status" });
+    }
 
-  const emergency = await Emergency.findById(emergencyId);
+    const emergency = await Emergency.findById(emergencyId);
 
-  if (!emergency) {
-    return res.status(404).json({ message: "Emergency not found" });
-  }
+    if (!emergency) {
+        return res.status(404).json({ message: "Emergency not found" });
+    }
 
-  if (
-    !emergency.ambulance ||
-    emergency.ambulance.toString() !== req.user._id.toString()
-  ) {
-    return res.status(403).json({ message: "Not assigned to this ambulance" });
-  }
+    if (
+        !emergency.ambulance ||
+        emergency.ambulance.toString() !== req.user._id.toString()
+    ) {
+        return res.status(403).json({ message: "Not assigned to this ambulance" });
+    }
 
-  const result = await updateAmbulanceStatusService({
-    emergency,
-    status,
-  });
+    const result = await updateAmbulanceStatusService({
+        emergency,
+        status,
+    });
 
-  if (result.error) {
-    return res.status(400).json({ message: result.message });
-  }
+    if (result.error) {
+        return res.status(400).json({ message: result.message });
+    }
 
-  res.status(200).json({
-    message: "Ambulance status updated",
-    emergency: result.emergency,
-  });
+    res.status(200).json({
+        message: "Ambulance status updated",
+        emergency: result.emergency,
+    });
 };

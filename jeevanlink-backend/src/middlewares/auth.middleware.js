@@ -11,6 +11,7 @@ export const authUser = async (req, res, next) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
+
   try {
     //  REDIS CHECK FIRST
     const cachedUser = await redis.get(`auth:user:${userToken}`);
@@ -25,6 +26,10 @@ export const authUser = async (req, res, next) => {
     const user = await User.findById(decoded._id);
     if (!user) {
       return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({ message: "Account is blocked by admin" });
     }
 
     // 🔴 SAVE USER IN REDIS

@@ -1,4 +1,4 @@
-import mongoose,{Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const emergencySchema = new mongoose.Schema(
   {
@@ -48,10 +48,20 @@ const emergencySchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["CREATED", "ASSIGNED", "IN_TREATMENT", "CLOSED"],
+      enum: ["CREATED", "ASSIGNED", "IN_TREATMENT", "CLOSED", "CANCELLED_BY_ADMIN"],
       default: "CREATED",
     },
+    adminCancelledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
 
+    },
+    adminCancelledAt: {
+      type: Date,
+      default: null
+    },
+    
     notes: String,
     closedAt: Date,
   },

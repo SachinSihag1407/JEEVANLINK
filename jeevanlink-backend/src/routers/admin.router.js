@@ -7,7 +7,8 @@ import {
     getAllUsers,
     blockUser,
     unblockUser,
-    getAuditLogs
+    getAuditLogs,
+    getAdminStats
 } from "../controllers/admin.controller.js";
 
 const adminRouter = express.Router();
@@ -22,7 +23,10 @@ adminRouter.get("/users", getAllUsers);
 adminRouter.patch("/users/:id/block", blockUser);
 adminRouter.patch("/users/:id/unblock", unblockUser);
 
-router.get("/audit-logs", getAuditLogs);
+adminRouter.get("/audit-logs", getAuditLogs);
+
+adminRouter.get("/stats", getAdminStats);
+
 
 
 export default adminRouter;

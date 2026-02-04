@@ -108,3 +108,47 @@ export const getAuditLogs = async (req, res) => {
   res.json(logs);
 };
 
+
+/*-----------------------  get all stats--------------------*/
+
+export const getAdminStats = async (req, res) => {
+  const [
+    totalEmergencies,
+    activeEmergencies,
+    closedEmergencies,
+    cancelledByAdmin,
+    totalUsers,
+    patients,
+    hospitals,
+    ambulances,
+    bloodBanks
+  ] = await Promise.all([
+    Emergency.countDocuments(),
+    Emergency.countDocuments({ status: { $in: ["CREATED", "ASSIGNED", "IN_TREATMENT"] } }),
+    Emergency.countDocuments({ status: "CLOSED" }),
+    Emergency.countDocuments({ status: "CANCELLED_BY_ADMIN" }),
+
+    User.countDocuments(),
+    User.countDocuments({ role: "PATIENT" }),
+    User.countDocuments({ role: "HOSPITAL" }),
+    User.countDocuments({ role: "AMBULANCE" }),
+    User.countDocuments({ role: "BLOOD_BANK" })
+  ]);
+
+  res.json({
+    emergencies: {
+      total: totalEmergencies,
+      active: activeEmergencies,
+      closed: closedEmergencies,
+      cancelledByAdmin
+    },
+    users: {
+      total: totalUsers,
+      patients,
+      hospitals,
+      ambulances,
+      bloodBanks
+    }
+  });
+};
+

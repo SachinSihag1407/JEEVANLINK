@@ -12,11 +12,13 @@ import AmbulanceDashboard from "../pages/ambulance/AmbulanceDashboard.jsx";
 import AdminDashboard from "../pages/admin/AdminDashboard.jsx";
 
 import NotFound from "../pages/NotFound.jsx";
+import Home from "../pages/Home/Home.jsx";
 
 const AppRoutes = () => {
   return (
     <Routes>
       {/* Public */}
+      <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 

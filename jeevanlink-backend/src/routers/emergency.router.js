@@ -7,6 +7,8 @@ import {
     createEmergency,
     getAssignedEmergenciesForAmbulance,
     getEmergencyById,
+    getMyActiveEmergency,
+    getMyEmergencyHistory,
     getPendingEmergencies,
     updateAmbulanceStatus,
     updateEmergencyStatus,
@@ -83,4 +85,17 @@ emergencyRouter.patch(
   authUser,
   updateAmbulanceStatus
 );
+
+emergencyRouter.get(
+  "/my-active",
+  authUser,
+  getMyActiveEmergency
+);
+
+emergencyRouter.get(
+  "/my-history",
+  authUser,
+  getMyEmergencyHistory
+);
+
 export default emergencyRouter;

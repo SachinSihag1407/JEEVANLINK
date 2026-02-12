@@ -58,7 +58,7 @@ const Register = () => {
           <h1 className="text-white tracking-tight text-[32px] font-bold leading-tight">
             Create Account
           </h1>
-          <p className="text-gray-400 text-base font-normal leading-normal mt-2">
+          <p className="text-gray-400 text-base font-normal leading-normal mt-1">
             Join our secure healthcare network
           </p>
         </div>

@@ -17,6 +17,7 @@ const Login = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
+    // console.log("FORM SUBMITTED");  
 
     try {
       const res = await api.post("/users/login", {
@@ -24,9 +25,17 @@ const Login = () => {
         password,
       });
 
-      const { token, user } = res.data;
+      // console.log("CALLING LOGIN API");
 
-      login(token, user);
+
+      const { userToken, user } = res.data;
+
+      // console.log("RESPONSE:", res.data);
+
+
+      login(userToken, user);
+
+// console.log("ROLE IS:", user.role);
 
       if (user.role === "PATIENT") navigate("/patient");
       if (user.role === "HOSPITAL") navigate("/hospital");

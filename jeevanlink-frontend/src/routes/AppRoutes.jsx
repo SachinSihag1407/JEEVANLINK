@@ -7,6 +7,7 @@ import Register from "../pages/auth/Register.jsx";
 
 // dashboards
 import PatientDashboard from "../pages/patient/PatientDashboard.jsx";
+import CreateEmergency from "../pages/patient/CreateEmergency";
 import HospitalDashboard from "../pages/hospital/HospitalDashboard.jsx";
 import AmbulanceDashboard from "../pages/ambulance/AmbulanceDashboard.jsx";
 import AdminDashboard from "../pages/admin/AdminDashboard.jsx";
@@ -31,6 +32,16 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/patient/create"
+        element={
+          <ProtectedRoute allowedRoles={["PATIENT"]}>
+            <CreateEmergency />
+          </ProtectedRoute>
+        }
+      />
+
 
       {/* Hospital */}
       <Route

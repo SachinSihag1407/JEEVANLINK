@@ -307,3 +307,36 @@ export const updateAmbulanceStatus = async (req, res) => {
         emergency: result.emergency,
     });
 };
+
+
+/*------------------  get get active emergency-----------------------------*/
+export const getMyActiveEmergency = async (req, res) => {
+  if (req.user.role !== "PATIENT") {
+    return res.status(403).json({ message: "Only patients allowed" });
+  }
+
+  const emergency = await Emergency.findOne({
+    patient: req.user._id,
+    status: { $in: ["CREATED", "ASSIGNED", "IN_TREATMENT"] }
+  })
+  .populate("hospital", "name")
+  .populate("ambulance", "name");
+
+  res.status(200).json({ emergency });
+};
+
+
+/*----------------------Get My Emergency History----------------*/
+export const getMyEmergencyHistory = async (req, res) => {
+  if (req.user.role !== "PATIENT") {
+    return res.status(403).json({ message: "Only patients allowed" });
+  }
+
+  const emergencies = await Emergency.find({
+    patient: req.user._id,
+    status: { $in: ["CLOSED", "CANCELLED_BY_ADMIN"] }
+  })
+  .sort({ createdAt: -1 });
+
+  res.status(200).json({ emergencies });
+};

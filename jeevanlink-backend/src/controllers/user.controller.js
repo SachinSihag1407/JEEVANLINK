@@ -52,6 +52,8 @@ const loginUser = async (req, res) => {
 
     const { email, password } = req.body;
 
+    // console.log(email)
+
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
         return res.status(401).json({ message: "Invalid user Details" })
@@ -64,16 +66,16 @@ const loginUser = async (req, res) => {
     const userToken = user.generateAuthToken();
 
 
-    await redis.setEx(
-        `auth:user:${userToken}`,
-        60 * 60 * 24, // 24 hours
-        JSON.stringify({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role
-        })
-    );
+    // await redis.setEx(
+    //     `auth:user:${userToken}`,
+    //     60 * 60 * 24, // 24 hours
+    //     JSON.stringify({
+    //         _id: user._id,
+    //         name: user.name, 
+    //         email: user.email,
+    //         role: user.role
+    //     })
+    // );
 
     res.cookie("userToken", userToken);
 
@@ -82,7 +84,17 @@ const loginUser = async (req, res) => {
 
 }
 
+const getCurrentUser = async (req, res) => {
+  res.status(200).json({
+    user: req.user
+  });
+};
+
+
+
+
 export {
     registerUser,
-    loginUser
+    loginUser,
+    getCurrentUser
 }

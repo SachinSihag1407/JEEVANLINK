@@ -8,12 +8,14 @@ import Register from "../pages/auth/Register.jsx";
 // dashboards
 import PatientDashboard from "../pages/patient/PatientDashboard.jsx";
 import CreateEmergency from "../pages/patient/CreateEmergency";
+import PatientHistory from "../pages/patient/patientHistory.jsx";
 import HospitalDashboard from "../pages/hospital/HospitalDashboard.jsx";
 import AmbulanceDashboard from "../pages/ambulance/AmbulanceDashboard.jsx";
 import AdminDashboard from "../pages/admin/AdminDashboard.jsx";
 
 import NotFound from "../pages/NotFound.jsx";
 import Home from "../pages/Home/Home.jsx";
+import PatientEmergencyDetail from "../pages/patient/PatientEmergencyDetail.jsx";
 
 const AppRoutes = () => {
   return (
@@ -38,6 +40,24 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={["PATIENT"]}>
             <CreateEmergency />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/patient/history"
+        element={
+          <ProtectedRoute allowedRoles={["PATIENT"]}>
+            <PatientHistory />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/patient/emergency/:id"
+        element={
+          <ProtectedRoute allowedRoles={["PATIENT"]}>
+            <PatientEmergencyDetail />
           </ProtectedRoute>
         }
       />

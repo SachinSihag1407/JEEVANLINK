@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import LiveMap from "../../components/LiveMap";
 
 const PatientDashboard = () => {
   const { user, logout } = useAuth();
@@ -11,7 +12,7 @@ const PatientDashboard = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔵 Fetch Dashboard Data
+  // ================= FETCH DATA =================
   const fetchData = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -24,8 +25,8 @@ const PatientDashboard = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setActiveEmergency(activeRes.data.emergency);
-      setHistory(historyRes.data.emergencies);
+      setActiveEmergency(activeRes.data?.emergency || null);
+      setHistory(historyRes.data?.emergencies || []);
     } catch (err) {
       console.log("Dashboard fetch error", err);
     } finally {
@@ -33,12 +34,17 @@ const PatientDashboard = () => {
     }
   };
 
+  // Auto refresh every 10 sec
   useEffect(() => {
     fetchData();
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  // 🔴 Cancel Emergency
+  // ================= CANCEL =================
   const cancelEmergency = async () => {
+    if (!activeEmergency?._id) return;
+
     try {
       const token = localStorage.getItem("token");
 
@@ -56,46 +62,37 @@ const PatientDashboard = () => {
     }
   };
 
-  // 🟢 Create Emergency (Basic)
-  const raiseEmergency = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      await api.post(
-        "/emergencies/create-emergency",
-        {
-          symptoms: "Emergency reported from dashboard",
-          location: {
-            lat: 28.6139,
-            lng: 77.209,
-          },
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      fetchData();
-    } catch (err) {
-      console.log("Create failed");
+  // ================= STATUS COLOR =================
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "CREATED":
+        return "bg-yellow-500/20 text-yellow-400";
+      case "ASSIGNED":
+        return "bg-blue-500/20 text-blue-400";
+      case "IN_TREATMENT":
+        return "bg-purple-500/20 text-purple-400";
+      case "CLOSED":
+        return "bg-green-500/20 text-green-400";
+      default:
+        return "bg-gray-500/20 text-gray-400";
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white bg-background-dark">
+      <div className="min-h-screen flex items-center justify-center text-white bg-[#0A0C10]">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background-dark text-white">
+    <div className="min-h-screen bg-[#0A0C10] text-white">
 
-      {/* Header */}
+      {/* ================= HEADER ================= */}
       <div className="flex justify-between items-center px-6 py-4 border-b border-white/10">
         <h1 className="text-lg font-bold">
-          Welcome, {user?.name}
+          Hello, {user?.name}
         </h1>
 
         <button
@@ -111,9 +108,9 @@ const PatientDashboard = () => {
 
       <div className="p-6 space-y-6">
 
-        {/* 🔵 If No Active Emergency */}
+        {/* ================= NO ACTIVE ================= */}
         {!activeEmergency && (
-          <div className="bg-card-dark p-6 rounded-2xl shadow-xl">
+          <div className="bg-[#1A1D23] p-6 rounded-2xl shadow-xl">
             <h2 className="text-xl font-bold mb-3">
               Need Immediate Help?
             </h2>
@@ -124,55 +121,87 @@ const PatientDashboard = () => {
 
             <button
               onClick={() => navigate("/patient/create")}
-              className="w-full bg-primary py-3 rounded-xl font-bold"
+              className="w-full bg-blue-600 hover:bg-blue-700 transition py-3 rounded-xl font-bold"
             >
               Request Emergency Help
             </button>
           </div>
         )}
 
-        {/* 🔴 If Active Emergency Exists */}
+        {/* ================= ACTIVE EMERGENCY ================= */}
         {activeEmergency && (
-          <div className="bg-card-dark p-6 rounded-2xl shadow-xl">
-            <h2 className="text-xl font-bold mb-4">
-              Emergency Status
-            </h2>
+          <>
+            {/* STATUS CARD */}
+            <div
+              onClick={() =>
+                navigate(`/patient/emergency/${activeEmergency._id}`)
+              }
+              className="bg-[#1A1D23] p-6 rounded-2xl shadow-xl space-y-4 cursor-pointer hover:bg-[#20232b] transition"
+            >
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-bold">
+                  Emergency Status
+                </h2>
 
-            <p className="mb-2">
-              <span className="font-semibold">Status:</span>{" "}
-              {activeEmergency.status}
-            </p>
+                <span
+                  className={`text-xs px-3 py-1 rounded-full font-semibold ${getStatusColor(
+                    activeEmergency.status
+                  )}`}
+                >
+                  {activeEmergency.status}
+                </span>
+              </div>
 
-            {activeEmergency.hospital && (
-              <p className="mb-2">
-                <span className="font-semibold">Hospital:</span>{" "}
-                {activeEmergency.hospital.name}
-              </p>
+              {activeEmergency.hospital && (
+                <p className="text-sm text-white/70">
+                  Hospital: {activeEmergency.hospital.name}
+                </p>
+              )}
+
+              {activeEmergency.ambulance && (
+                <p className="text-sm text-white/70">
+                  Ambulance: {activeEmergency.ambulance.name}
+                </p>
+              )}
+
+              {activeEmergency.status === "CREATED" && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cancelEmergency();
+                  }}
+                  className="bg-red-600 hover:bg-red-700 transition px-4 py-2 rounded-lg text-sm"
+                >
+                  Cancel Emergency
+                </button>
+              )}
+            </div>
+
+            {/* ================= LIVE MAP ================= */}
+            {activeEmergency.location && (
+              <LiveMap
+                lat={activeEmergency.location.lat}
+                lng={activeEmergency.location.lng}
+                ambulanceLocation={activeEmergency.ambulanceLocation}
+              />
             )}
-
-            {activeEmergency.ambulance && (
-              <p className="mb-2">
-                <span className="font-semibold">Ambulance:</span>{" "}
-                {activeEmergency.ambulance.name}
-              </p>
-            )}
-
-            {activeEmergency.status === "CREATED" && (
-              <button
-                onClick={cancelEmergency}
-                className="mt-4 bg-red-600 px-4 py-2 rounded-lg"
-              >
-                Cancel Emergency
-              </button>
-            )}
-          </div>
+          </>
         )}
 
-        {/* 🟢 History */}
-        <div className="bg-card-dark p-6 rounded-2xl shadow-xl">
-          <h2 className="text-lg font-bold mb-4">
-            Emergency History
-          </h2>
+        {/* ================= HISTORY ================= */}
+        <div className="bg-[#1A1D23] p-6 rounded-2xl shadow-xl">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold">
+              Recent Emergencies
+            </h2>
+
+            <button
+              onClick={() => navigate("/patient/history")}
+              className="text-blue-400 text-xs font-semibold hover:underline"
+            >
+              View All
+            </button>
+          </div>
 
           {history.length === 0 && (
             <p className="text-sm text-white/50">
@@ -180,22 +209,35 @@ const PatientDashboard = () => {
             </p>
           )}
 
-          {history.map((item) => (
-            <div
-              key={item._id}
-              className="border-b border-white/10 py-3"
-            >
-              <p className="text-sm font-semibold">
-                {item.emergencyType}
-              </p>
-              <p className="text-xs text-white/50">
-                {new Date(item.createdAt).toLocaleString()}
-              </p>
-              <p className="text-xs">
-                Status: {item.status}
-              </p>
-            </div>
-          ))}
+          <div className="max-h-60 overflow-y-auto space-y-3 pr-1">
+            {history.slice(0, 5).map((item) => (
+              <div
+                key={item._id}
+                onClick={() =>
+                  navigate(`/patient/emergency/${item._id}`)
+                }
+                className="bg-black/20 p-4 rounded-xl border border-white/5 cursor-pointer hover:bg-black/40 transition"
+              >
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-semibold">
+                    {item.emergencyType}
+                  </p>
+
+                  <span
+                    className={`text-[10px] px-2 py-1 rounded-full ${getStatusColor(
+                      item.status
+                    )}`}
+                  >
+                    {item.status}
+                  </span>
+                </div>
+
+                <p className="text-xs text-white/50 mt-1">
+                  {new Date(item.createdAt).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
 
       </div>

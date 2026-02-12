@@ -205,7 +205,7 @@ const CreateEmergency = () => {
 
       <div className="relative flex min-h-screen w-full flex-col bg-background-dark overflow-x-hidden pb-32">
 
-        <header className="sticky top-0 z-50 flex flex-col bg-background-dark/80 backdrop-blur-md border-b border-white/5 px-4 pt-6 pb-4">
+        <header className="overflow-y-auto top-0 z-50 flex flex-col item-center bg-background-dark/80 backdrop-blur-md border-b border-white/5 px-4 pt-6 pb-4">
           <h1 className="text-white text-xl font-extrabold tracking-tight">
             Emergency Assistance Request
           </h1>
@@ -226,6 +226,7 @@ const CreateEmergency = () => {
               <select
                 value={emergencyType}
                 onChange={(e) => setEmergencyType(e.target.value)}
+                //  size={3} 
                 className="w-full h-14 rounded-2xl px-4 appearance-none focus:ring-2 focus:ring-primary/50 transition-all"
               >
                 <option value="">Select emergency type</option>
@@ -288,46 +289,70 @@ const CreateEmergency = () => {
               </button>
             </div>
 
-            {/* Blood Toggle */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold">
-                Blood Required?
-              </span>
-              <input
-                type="checkbox"
-                checked={bloodRequired}
-                onChange={() => setBloodRequired(!bloodRequired)}
-              />
-            </div>
+            {/* Blood Requirement Section */}
+            <div className="space-y-3">
 
-            {bloodRequired && (
-              <div className="grid grid-cols-2 gap-4">
-                <select
-                  value={bloodGroup}
-                  onChange={(e) => setBloodGroup(e.target.value)}
-                  className="h-12 rounded-xl px-3 text-sm"
-                >
-                  <option value="">Blood Group</option>
-                  <option>O+</option>
-                  <option>O-</option>
-                  <option>A+</option>
-                  <option>A-</option>
-                  <option>B+</option>
-                  <option>B-</option>
-                  <option>AB+</option>
-                  <option>AB-</option>
-                </select>
+              {/* Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-white">
+                    Blood May Be Required?
+                  </p>
+                  <p className="text-[11px] text-white/40">
+                    Enable only if you are aware that transfusion might be needed.
+                  </p>
+                </div>
 
                 <input
-                  type="number"
-                  min="1"
-                  value={bloodUnits}
-                  onChange={(e) => setBloodUnits(e.target.value)}
-                  className="h-12 rounded-xl px-4 text-sm"
-                  placeholder="Units"
+                  type="checkbox"
+                  checked={bloodRequired}
+                  onChange={() => setBloodRequired(!bloodRequired)}
+                  className="h-5 w-5 accent-blue-600"
                 />
               </div>
-            )}
+
+              {/* Conditional Fields */}
+              {bloodRequired && (
+                <div className="space-y-2">
+
+                  <div className="grid grid-cols-2 gap-4">
+
+                    {/* Blood Group (Optional) */}
+                    <select
+                      value={bloodGroup}
+                      onChange={(e) => setBloodGroup(e.target.value)}
+                      className="h-12 rounded-xl px-3 text-sm bg-card-dark border border-white/10 text-white focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="">Group (Optional)</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                    </select>
+
+                    {/* Units (Optional) */}
+                    <input
+                      type="number"
+                      min="1"
+                      value={bloodUnits}
+                      onChange={(e) => setBloodUnits(e.target.value)}
+                      className="h-12 rounded-xl px-4 text-sm bg-card-dark border border-white/10 text-white focus:ring-2 focus:ring-primary"
+                      placeholder="Units (Optional)"
+                    />
+                  </div>
+
+                  <p className="text-[11px] text-white/40">
+                    If unsure, leave blank. Medical team will assess requirement.
+                  </p>
+
+                </div>
+              )}
+            </div>
+
 
             {error && (
               <div className="text-red-400 text-sm bg-red-900/20 p-3 rounded-lg">
@@ -342,6 +367,17 @@ const CreateEmergency = () => {
             >
               {loading ? "Dispatching..." : "Dispatch Emergency Response"}
             </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/patient")}
+              className="w-full h-12 bg-white/5 rounded-2xl flex items-center justify-center active:bg-white/10 transition-colors"
+            >
+              <span className="text-white/60 text-sm font-bold">
+                Cancel
+              </span>
+            </button>
+
 
           </form>
 

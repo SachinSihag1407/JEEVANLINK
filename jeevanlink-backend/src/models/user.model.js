@@ -27,7 +27,13 @@ const userSchema = new Schema({
     isBlocked: {
         type: Boolean,
         default: false
+    },
+    location: {
+        address: String,
+        lat: Number,
+        lng: Number,
     }
+
 }, { timestamps: true })
 
 // now iske schema se hn kuch methods ko access krenge 
